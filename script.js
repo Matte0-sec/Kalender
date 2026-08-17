@@ -7,6 +7,7 @@ const currentMonthEl = document.getElementById('currentMonth');
 const currentDateEl = document.getElementById('currentDate');
 const prevBtn = document.getElementById('prevMonth');
 const nextBtn = document.getElementById('nextMonth');
+const profileBtn = document.getElementById('profileBtn');
 
 const modal = document.getElementById('modal');
 const modalTitle = document.getElementById('modalTitle');
@@ -23,6 +24,27 @@ const eventDesc = document.getElementById('eventDesc');
 const saveBtn = document.getElementById('saveBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const cancelBtn = document.getElementById('cancelBtn');
+
+function askForUsername(){
+	let username = '';
+	while(!username){
+		username = (window.prompt('Wie heißt du?') || '').trim();
+	}
+	localStorage.setItem('school-calendar-username', username);
+	return username;
+}
+
+let username = localStorage.getItem('school-calendar-username') || askForUsername();
+
+function eventStorageKey(){
+	return `school-calendar-events-${username.toLowerCase()}`;
+}
+
+function updateProfileButton(){
+	if(profileBtn) profileBtn.textContent = username;
+}
+
+updateProfileButton();
 
 // Dark mode toggle (button may be present in header)
 const darkModeBtn = document.getElementById('darkModeBtn');
@@ -41,7 +63,7 @@ let state = {
 
 function loadEvents(){
 	try{
-		let events = JSON.parse(localStorage.getItem('school-calendar-events') || '[]');
+		let events = JSON.parse(localStorage.getItem(eventStorageKey()) || '[]');
 		// Migrate old events: if has 'date', convert to 'startDate' and 'endDate'
 		events = events.map(ev => {
 			if (ev.date && !ev.startDate) {
@@ -56,7 +78,7 @@ function loadEvents(){
 }
 
 function saveEvents(){
-	localStorage.setItem('school-calendar-events', JSON.stringify(state.events));
+	localStorage.setItem(eventStorageKey(), JSON.stringify(state.events));
 }
 
 function render(){
@@ -257,6 +279,19 @@ cancelBtn.addEventListener('click', ()=>{ closeModal(); });
 
 prevBtn.addEventListener('click', ()=>{ changeMonth(-1); });
 nextBtn.addEventListener('click', ()=>{ changeMonth(1); });
+
+if(profileBtn){
+	profileBtn.addEventListener('click', ()=>{
+		const nextUsername = (window.prompt('Neuen Benutzernamen eingeben:', username) || '').trim();
+		if(!nextUsername || nextUsername === username) return;
+		username = nextUsername;
+		localStorage.setItem('school-calendar-username', username);
+		state.events = loadEvents();
+		updateProfileButton();
+		refreshTodoList();
+		render();
+	});
+}
 
 function changeMonth(delta){
 	state.viewMonth += delta;
